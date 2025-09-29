@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	conf "github.com/wal-g/wal-g/internal/config"
-	"github.com/wal-g/wal-g/internal/crypto/yckms"
 	"github.com/wal-g/wal-g/utility"
 
 	"github.com/pkg/errors"
@@ -21,9 +20,6 @@ import (
 	"github.com/wal-g/wal-g/internal/compression"
 	"github.com/wal-g/wal-g/internal/crypto"
 	"github.com/wal-g/wal-g/internal/crypto/awskms"
-	cachenvlpr "github.com/wal-g/wal-g/internal/crypto/envelope/enveloper/cached"
-	yckmsenvlpr "github.com/wal-g/wal-g/internal/crypto/envelope/enveloper/yckms"
-	envopenpgp "github.com/wal-g/wal-g/internal/crypto/envelope/openpgp"
 	"github.com/wal-g/wal-g/internal/crypto/openpgp"
 	"github.com/wal-g/wal-g/internal/fsutil"
 	"github.com/wal-g/wal-g/internal/limiters"
@@ -311,8 +307,6 @@ func ConfigureCrypterForSpecificConfig(config *viper.Viper) (crypto.Crypter, err
 		return configureEnvelopePgpCrypter(config)
 	case config.IsSet(conf.CseKmsIDSetting):
 		return awskms.CrypterFromKeyID(config.GetString(conf.CseKmsIDSetting), config.GetString(conf.CseKmsRegionSetting)), nil
-	case config.IsSet(conf.YcKmsKeyIDSetting):
-		return yckms.YcCrypterFromKeyIDAndCredential(config.GetString(conf.YcKmsKeyIDSetting), config.GetString(conf.YcSaKeyFileSetting)), nil
 	case isLibsodium:
 		return configureLibsodiumCrypter(config)
 	default:
@@ -342,31 +336,8 @@ func configurePgpCrypter(config *viper.Viper) (crypto.Crypter, error) {
 }
 
 func configureEnvelopePgpCrypter(config *viper.Viper) (crypto.Crypter, error) {
-	if !config.IsSet(conf.PgpEnvelopeYcKmsKeyIDSetting) {
-		return nil, errors.New("yandex cloud KMS key for client-side encryption and decryption must be configured")
-	}
 
-	yckmsEnveloper, err := yckmsenvlpr.EnveloperFromKeyIDAndCredential(
-		config.GetString(conf.PgpEnvelopeYcKmsKeyIDSetting),
-		config.GetString(conf.PgpEnvelopeYcSaKeyFileSetting),
-		config.GetString(conf.PgpEnvelopeYcEndpointSetting),
-	)
-	if err != nil {
-		return nil, err
-	}
-	expiration, err := conf.GetDurationSetting(conf.PgpEnvelopeCacheExpiration)
-	if err != nil {
-		return nil, err
-	}
-	enveloper := cachenvlpr.EnveloperWithCache(yckmsEnveloper, expiration)
-
-	if config.IsSet(conf.PgpEnvelopKeyPathSetting) {
-		return envopenpgp.CrypterFromKeyPath(viper.GetString(conf.PgpEnvelopKeyPathSetting), enveloper), nil
-	}
-	if config.IsSet(conf.PgpEnvelopeKeySetting) {
-		return envopenpgp.CrypterFromKey(viper.GetString(conf.PgpEnvelopeKeySetting), enveloper), nil
-	}
-	return nil, errors.New("there is no any supported envelope gpg crypter configuration")
+	return nil, errors.New("due to removing yandex-cloud/go-sdk this does not work anymore")
 }
 
 // TODO : unit tests
